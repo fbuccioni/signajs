@@ -2,8 +2,14 @@ var signajs = (function() {
     var SIGNAJS_PROP = '__signajs_events__';
 
     function signajs_object_property(object) {
-        if(typeof(object[SIGNAJS_PROP]) === 'undefined')
+        if(typeof(object[SIGNAJS_PROP]) === 'undefined') {
+            Object.defineProperty(object, SIGNAJS_PROP, {
+                enumerable: false,
+                writable: true
+            });
+
             object[SIGNAJS_PROP] = {};
+        }
 
         return object[SIGNAJS_PROP];
     }
@@ -19,13 +25,10 @@ var signajs = (function() {
 
     var signajs = {
         connect: function signajs_connect(object, events, callback) {
-            console.log(typeof(callback), callback);
             if(typeof(callback) === 'function') {
-                console.log('is function');
                 events = events.split(/\s+/);
 
                 for (var i = 0; i < events.length; ++i)
-                    console.log('rev');
                     signajs_event_slots(object, events[i]).push(callback)
             }
 
@@ -75,14 +78,15 @@ var signajs = (function() {
                     eventName = objectEvent
 
                 if (eventName === event)
-                    callbacksQueue.concat(objectEventSlot(object, objectEvent))
+                    callbacksQueue.push.apply(
+                        callbacksQueue, signajs_event_slots(object, objectEvent)
+                    )
             }
 
             if (callbacksQueue.length) {
                 setTimeout(function () {
-                    console.log('dispatch', event);
-                    for (var i = 0; i < callbacksQueue.length; ++i) {
-                        if (typeof(callbacksQueue) === 'function') {
+                    for (var i=0;i<callbacksQueue.length; ++i) {
+                        if (typeof(callbacksQueue[i]) === 'function') {
                             callbacksQueue[i].call(object, args)
                         }
                     }
